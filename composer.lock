@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "72473bf0a8d81e4ea4ac55af5a5dc384",
+    "content-hash": "c46b92eccd46b93e13a0e0c470b3736c",
     "packages": [
         {
             "name": "n7e/collection",
@@ -56,16 +56,16 @@
         },
         {
             "name": "n7e/configuration",
-            "version": "0.2.2",
+            "version": "0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/martin-pettersson/configuration-php.git",
-                "reference": "6e48be0445bb454fc43d84aff3263162387fe0e3"
+                "reference": "ec00f67bdd60ebd429c613e0eefd353052bd18f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/martin-pettersson/configuration-php/zipball/6e48be0445bb454fc43d84aff3263162387fe0e3",
-                "reference": "6e48be0445bb454fc43d84aff3263162387fe0e3",
+                "url": "https://api.github.com/repos/martin-pettersson/configuration-php/zipball/ec00f67bdd60ebd429c613e0eefd353052bd18f1",
+                "reference": "ec00f67bdd60ebd429c613e0eefd353052bd18f1",
                 "shasum": ""
             },
             "require": {
@@ -98,9 +98,9 @@
             "description": "A flexible application configuration library.",
             "support": {
                 "issues": "https://github.com/martin-pettersson/configuration-php/issues",
-                "source": "https://github.com/martin-pettersson/configuration-php/tree/0.2.2"
+                "source": "https://github.com/martin-pettersson/configuration-php/tree/0.4.0"
             },
-            "time": "2025-02-17T12:50:55+00:00"
+            "time": "2025-12-16T10:57:25+00:00"
         },
         {
             "name": "n7e/dependency-injection",
@@ -5945,5 +5945,5 @@
         "php": ">=8.3"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
