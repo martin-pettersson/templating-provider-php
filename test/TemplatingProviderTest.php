@@ -14,14 +14,14 @@ namespace N7e;
 use N7e\Configuration\ConfigurationInterface;
 use N7e\DependencyInjection\ContainerBuilderInterface;
 use N7e\DependencyInjection\ContainerInterface;
+use N7e\DependencyInjection\DependencyDefinitionInterface;
 use N7e\Templating\TemplateEngineInterface;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
+use RuntimeException;
 
 #[CoversClass(TemplatingProvider::class)]
 class TemplatingProviderTest extends TestCase
@@ -29,89 +29,102 @@ class TemplatingProviderTest extends TestCase
     private TemplatingProvider $provider;
     private MockObject $containerBuilderMock;
     private MockObject $containerMock;
+    private MockObject $registryMock;
     private MockObject $configurationMock;
 
     #[Before]
     public function setUp(): void
     {
+        $this->provider = new TemplatingProvider();
         $this->containerBuilderMock = $this->getMockBuilder(ContainerBuilderInterface::class)->getMock();
         $this->containerMock = $this->getMockBuilder(ContainerInterface::class)->getMock();
+        $this->registryMock = $this->getMockBuilder(TemplateEngineProviderRegistryInterface::class)->getMock();
         $this->configurationMock = $this->getMockBuilder(ConfigurationInterface::class)->getMock();
-        $this->provider = new TemplatingProvider();
 
-        $this->containerMock->method('get')
-            ->with(ConfigurationInterface::class)
-            ->willReturn($this->configurationMock);
-    }
-
-    private function capture(&$destination): Callback
-    {
-        return $this->callback(static function ($source) use (&$destination) {
-            $destination = $source;
-
-            return true;
+        $this->containerMock->method('get')->willReturnCallback(fn($identifier) => match ($identifier) {
+            TemplateEngineProviderRegistryInterface::class => $this->registryMock,
+            ConfigurationInterface::class => $this->configurationMock,
+            default => throw new RuntimeException("No mock found for: {$identifier}"),
         });
+        $this->configurationMock->method('get')->willReturn('');
     }
 
     #[Test]
-    public function shouldNotConfigureTemplateEngineIfInappropriate(): void
+    public function shouldRegisterNecessaryTemplatingComponents(): void
     {
         $this->containerBuilderMock
-            ->expects($this->exactly(2))
+            ->expects($this->once())
+            ->method('addClass')
+            ->with(TemplateEngineProviderRegistry::class);
+        $this->containerBuilderMock
+            ->expects($this->once())
             ->method('addFactory')
-            ->with($this->anything(), $this->capture($factoryCallback));
+            ->with(TemplateEngineInterface::class, $this->isCallable());
+
+        $this->provider->configure($this->containerBuilderMock);
+    }
+
+    #[Test]
+    public function shouldThrowExceptionIfAccessingTemplateEngineBeforeLoadPhase(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        $templateEngineFactory = null;
+
+        $this->containerBuilderMock
+            ->method('addFactory')
+            ->willReturnCallback(function ($identifier, $factory) use (&$templateEngineFactory) {
+                $templateEngineFactory = $factory;
+
+                return $this->getMockBuilder(DependencyDefinitionInterface::class)->getMock();
+            });
+
+        $this->provider->configure($this->containerBuilderMock);
+
+        $templateEngineFactory();
+    }
+
+    #[Test]
+    public function shouldNotThrowExceptionIfAccessingTemplateEngineAfterLoadPhase(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $templateEngineFactory = null;
+
+        $this->containerBuilderMock
+            ->method('addFactory')
+            ->willReturnCallback(function ($identifier, $factory) use (&$templateEngineFactory) {
+                $templateEngineFactory = $factory;
+
+                return $this->getMockBuilder(DependencyDefinitionInterface::class)->getMock();
+            });
 
         $this->provider->configure($this->containerBuilderMock);
         $this->provider->load($this->containerMock);
 
-        $this->assertNull($factoryCallback());
+        $templateEngineFactory();
     }
 
     #[Test]
-    public function shouldConfigureKnownTemplateEngine(): void
+    public function shouldCreateTemplateEngineFromProviderRegistry(): void
     {
-        $templateEngine = 'php';
         $templateEngineMock = $this->getMockBuilder(TemplateEngineInterface::class)->getMock();
         $templateEngineProviderMock = $this->getMockBuilder(TemplateEngineProviderInterface::class)->getMock();
+        $templateEngineFactory = null;
 
         $this->containerBuilderMock
-            ->expects($this->exactly(2))
             ->method('addFactory')
-            ->with($this->anything(), $this->capture($factoryCallback));
-        $templateEngineProviderMock
-            ->expects($this->once())
-            ->method('canProvideImplementationFor')
-            ->with($templateEngine)
-            ->willReturn(true);
-        $templateEngineProviderMock
-            ->method('createImplementationUsing')
-            ->willReturn($templateEngineMock);
-        $this->configurationMock
-            ->method('get')
-            ->with('templating.templateEngine')
-            ->willReturn($templateEngine);
+            ->willReturnCallback(function ($identifier, $factory) use (&$templateEngineFactory) {
+                $templateEngineFactory = $factory;
 
-        $this->provider->configure($this->containerBuilderMock);
-
-        $providersProperty = (new ReflectionClass(TemplatingProvider::class))->getProperty('templateEngineProviders');
-        $providersProperty->setAccessible(true);
-        $providersProperty->getValue($this->provider)->add($templateEngineProviderMock);
-
-        $this->provider->load($this->containerMock);
-
-        $this->assertSame($templateEngineMock, $factoryCallback());
-    }
-
-    #[Test]
-    public function shouldThrowIfUnknownTemplateEngine(): void
-    {
-        $this->expectException(TemplateEngineProviderNotFoundException::class);
-        $this->configurationMock
-            ->method('get')
-            ->with('templating.templateEngine')
-            ->willReturn('php');
+                return $this->getMockBuilder(DependencyDefinitionInterface::class)->getMock();
+            });
+        $this->registryMock->method('providerFor')->willReturn($templateEngineProviderMock);
+        $templateEngineProviderMock->method('createImplementationUsing')->willReturn($templateEngineMock);
 
         $this->provider->configure($this->containerBuilderMock);
         $this->provider->load($this->containerMock);
+
+        $this->assertSame($templateEngineMock, $templateEngineFactory());
     }
 }

@@ -11,13 +11,12 @@ declare(strict_types=1);
 
 namespace N7e;
 
-use N7e\Collection\ArrayCollection;
-use N7e\Collection\CollectionInterface;
 use N7e\Configuration\ConfigurationInterface;
 use N7e\DependencyInjection\ContainerBuilderInterface;
 use N7e\DependencyInjection\ContainerInterface;
 use N7e\Templating\TemplateEngineInterface;
 use Override;
+use RuntimeException;
 
 /**
  * Provides a configured template engine implementation.
@@ -25,56 +24,39 @@ use Override;
 final class TemplatingProvider implements ServiceProviderInterface
 {
     /**
-     * Registered template engine providers.
-     *
-     * @var \N7e\Collection\CollectionInterface
-     */
-    private readonly CollectionInterface $templateEngineProviders;
-
-    /**
      * Configured template engine.
      *
      * @var \N7e\Templating\TemplateEngineInterface|null
      */
     private ?TemplateEngineInterface $templateEngine = null;
 
-    /**
-     * Create a new service provider instance.
-     */
-    public function __construct()
-    {
-        $this->templateEngineProviders = new ArrayCollection([]);
-    }
-
     #[Override]
     public function configure(ContainerBuilderInterface $containerBuilder): void
     {
-        $containerBuilder->addFactory('template-engine-providers', fn() => $this->templateEngineProviders)->singleton();
-        $containerBuilder->addFactory(TemplateEngineInterface::class, fn() => $this->templateEngine)->singleton();
+        $containerBuilder->addClass(TemplateEngineProviderRegistry::class)
+            ->singleton()
+            ->alias(TemplateEngineProviderRegistryInterface::class);
+        $containerBuilder->addFactory(TemplateEngineInterface::class, function () {
+            if (is_null($this->templateEngine)) {
+                throw new RuntimeException('Cannot use template engine before the templating provider\'s load phase');
+            }
+
+            return $this->templateEngine;
+        })
+            ->singleton();
     }
 
     #[Override]
     public function load(ContainerInterface $container): void
     {
+        /** @var \N7e\TemplateEngineProviderRegistryInterface $templateEngineProviders */
+        $templateEngineProviders = $container->get(TemplateEngineProviderRegistryInterface::class);
+
         /** @var \N7e\Configuration\ConfigurationInterface $configuration */
         $configuration = $container->get(ConfigurationInterface::class);
 
-        /** @var string|null $templateEngine */
-        $templateEngine = $configuration->get('templating.templateEngine');
-
-        if (is_null($templateEngine)) {
-            return;
-        }
-
-        /** @var \N7e\TemplateEngineProviderInterface|null $templateEngineProvider */
-        $templateEngineProvider = $this->templateEngineProviders->find(
-            static fn($provider) => $provider->canProvideImplementationFor($templateEngine)
-        );
-
-        if (is_null($templateEngineProvider)) {
-            throw new TemplateEngineProviderNotFoundException($templateEngine);
-        }
-
-        $this->templateEngine = $templateEngineProvider->createImplementationUsing($configuration);
+        $this->templateEngine = $templateEngineProviders
+            ->providerFor($configuration->get('templating.engine', ''))
+            ->createImplementationUsing($configuration);
     }
 }
