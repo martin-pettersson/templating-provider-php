@@ -4,56 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c46b92eccd46b93e13a0e0c470b3736c",
+    "content-hash": "760461d3a5bec492b9537b2eac8e8448",
     "packages": [
-        {
-            "name": "n7e/collection",
-            "version": "0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/martin-pettersson/collection-php.git",
-                "reference": "8157d15a33f5c2cf3e1b85c81a4399a954d4a5ce"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/martin-pettersson/collection-php/zipball/8157d15a33f5c2cf3e1b85c81a4399a954d4a5ce",
-                "reference": "8157d15a33f5c2cf3e1b85c81a4399a954d4a5ce",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.3"
-            },
-            "require-dev": {
-                "nunomaduro/phpinsights": "^v2.12.0",
-                "pdepend/pdepend": "^2.16.2",
-                "phpmd/phpmd": "^2.15.0",
-                "phpstan/phpstan": "^2.1.2",
-                "phpunit/phpunit": "^11.5.6",
-                "squizlabs/php_codesniffer": "^3.11.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "N7e\\Collection\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Martin Pettersson",
-                    "email": "martin@n7e.se"
-                }
-            ],
-            "description": "A convenient collection abstraction.",
-            "support": {
-                "issues": "https://github.com/martin-pettersson/collection-php/issues",
-                "source": "https://github.com/martin-pettersson/collection-php/tree/0.1.0"
-            },
-            "time": "2025-03-14T09:54:18+00:00"
-        },
         {
             "name": "n7e/configuration",
             "version": "0.4.0",
